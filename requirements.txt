@@ -1,9 +1,7 @@
 fastapi
-uvicorn[standard]
-gradio_client
+uvicorn
+python-multipart
+pillow
 requests
-Pillow
-python-multipart﻿
-
-
-
+gradio-client
+python-dotenv
