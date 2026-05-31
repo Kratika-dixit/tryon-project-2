@@ -1,13 +1,200 @@
-<!doctype html>
-<html lang="en">
-  <head>
-    <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width,initial-scale=1" />
-    <title>TryOn</title>
-  </head>
-  <body>
-    <h3>TryOn</h3>
-    <button id="start">Start</button>
-    <script src="popup.js"></script>
-  </body>
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>Virtual Try-On</title>
+  <style>
+    body {
+      width: 400px;
+      min-height: 500px;
+      margin: 0;
+      padding: 20px;
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+      color: #e9ecef;
+    }
+    h1 {
+      font-size: 24px;
+      text-align: center;
+      background: linear-gradient(45deg, #00d4ff, #090979);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      margin-bottom: 20px;
+    }
+    .section {
+      background: rgba(255,255,255,0.05);
+      border-radius: 12px;
+      padding: 15px;
+      border: 1px solid rgba(255,255,255,0.1);
+      margin-bottom: 15px;
+    }
+    .section h3 {
+      margin: 0 0 10px 0;
+      color: #00d4ff;
+      font-size: 16px;
+    }
+    .image-preview {
+      width: 100%;
+      height: 150px;
+      border-radius: 8px;
+      background: rgba(0,0,0,0.3);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border: 2px dashed rgba(255,255,255,0.2);
+      overflow: hidden;
+      color: rgba(255,255,255,0.5);
+      font-size: 14px;
+    }
+    .image-preview img {
+      max-width: 100%;
+      max-height: 100%;
+      object-fit: contain;
+    }
+    .file-input {
+      width: 100%;
+      padding: 12px;
+      background: linear-gradient(135deg, rgba(0,212,255,0.15), rgba(255,0,127,0.1));
+      border: 2px dashed #00d4ff;
+      border-radius: 8px;
+      color: #00d4ff;
+      cursor: pointer;
+      font-weight: 600;
+      font-size: 13px;
+      transition: all 0.3s ease;
+    }
+    .file-input:hover {
+      background: linear-gradient(135deg, rgba(0,212,255,0.25), rgba(255,0,127,0.2));
+      box-shadow: 0 0 15px rgba(0,212,255,0.3);
+    }
+    .file-input::file-selector-button {
+      background: linear-gradient(135deg, #00d4ff, #00a8cc);
+      color: white;
+      border: none;
+      padding: 8px 16px;
+      border-radius: 6px;
+      cursor: pointer;
+      font-weight: 600;
+      margin-right: 10px;
+      transition: all 0.3s ease;
+    }
+    .file-input::file-selector-button:hover {
+      background: linear-gradient(135deg, #00e6ff, #00bbdd);
+      box-shadow: 0 0 10px rgba(0,212,255,0.5);
+    }
+    .try-on-btn {
+      width: 100%;
+      padding: 12px;
+      background: linear-gradient(45deg, #ff6b6b, #ee5a24);
+      color: white;
+      border: none;
+      border-radius: 8px;
+      font-size: 16px;
+      font-weight: bold;
+      cursor: pointer;
+      margin-top: 10px;
+    }
+    .try-on-btn:disabled {
+      background: #666;
+      cursor: not-allowed;
+    }
+    .result-section { display: none; }
+    .result-section.show { display: block; }
+    .loading {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      color: #00d4ff;
+    }
+    .spinner {
+      width: 20px; height: 20px;
+      border: 2px solid rgba(0,212,255,0.3);
+      border-top: 2px solid #00d4ff;
+      border-radius: 50%;
+      animation: spin 1s linear infinite;
+    }
+    @keyframes spin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+    .error {
+      background: rgba(255,87,87,0.1);
+      border: 1px solid #ff5757;
+      color: #ff6b6b;
+      padding: 10px;
+      border-radius: 6px;
+      margin-top: 10px;
+      font-size: 14px;
+    }
+    .success {
+      background: rgba(0,255,136,0.1);
+      border: 1px solid #00ff88;
+      color: #00ff88;
+      padding: 10px;
+      border-radius: 6px;
+      margin-top: 10px;
+      font-size: 14px;
+    }
+    .photo-tips {
+      background: rgba(0,212,255,0.08);
+      border-left: 3px solid #00d4ff;
+      padding: 10px 12px;
+      margin-bottom: 15px;
+      border-radius: 4px;
+      font-size: 12px;
+    }
+    .photo-tips-title {
+      color: #00d4ff;
+      font-weight: 600;
+      margin-bottom: 8px;
+    }
+    .photo-tips-list {
+      list-style: none;
+      margin: 0;
+      padding-left: 0;
+      color: rgba(233,236,239,0.9);
+      line-height: 1.6;
+    }
+    .photo-tips-list li {
+      margin: 4px 0;
+    }
+  </style>
+</head>
+<body>
+  <h1>👕 Virtual Try-On</h1>
+
+  <div class="photo-tips">
+    <div class="photo-tips-title">For best results, your photo should have:</div>
+    <ul class="photo-tips-list">
+      <li>✅ Full body visible</li>
+      <li>✅ Plain/white background</li>
+      <li>✅ Standing straight</li>
+      <li>✅ Good lighting</li>
+    </ul>
+  </div>
+
+  <div class="section">
+    <h3>Selected Clothing</h3>
+    <div class="image-preview" id="clothingPreview">
+      No clothing selected
+    </div>
+  </div>
+
+  <div class="section">
+    <h3>Upload Your Photo</h3>
+    <input type="file" id="personPhoto" accept="image/*" class="file-input">
+  </div>
+
+  <button id="tryOnBtn" class="try-on-btn" disabled>🚀 Try On</button>
+
+  <div class="section result-section" id="resultSection">
+    <h3>Result</h3>
+    <div class="image-preview" id="resultPreview"></div>
+    <div id="statusMessage"></div>
+  </div>
+
+  <script src="popup.js"></script>
+</body>
 </html>
