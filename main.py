@@ -40,16 +40,10 @@ async def try_on(
     temp_dir = None
     try:
         if not cloth_url or not cloth_url.strip():
-            return {
-                "status": "error",
-                "message": "cloth_url is required and cannot be empty",
-            }
+            return {"status": "error", "message": "cloth_url is required"}
 
         if not person_image or person_image.size == 0:
-            return {
-                "status": "error",
-                "message": "person_image is required and cannot be empty",
-            }
+            return {"status": "error", "message": "person_image is required"}
 
         temp_dir = tempfile.mkdtemp()
 
@@ -95,16 +89,10 @@ async def try_on(
         shutil.copy(result[0], f"static/{result_filename}")
         result_image_path = f"/static/{result_filename}"
 
-        return {
-            "status": "success",
-            "result_image": result_image_path,
-        }
+        return {"status": "success", "result_image": result_image_path}
 
     except Exception as e:
-        return {
-            "status": "error",
-            "message": f"Failed to process try-on: {str(e)}",
-        }
+        return {"status": "error", "message": f"Failed: {str(e)}"}
 
     finally:
         if temp_dir and os.path.exists(temp_dir):
