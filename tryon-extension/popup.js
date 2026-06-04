@@ -30,13 +30,12 @@ document.addEventListener('DOMContentLoaded', function() {
   }
 
   tryOnBtn.addEventListener('click', async function() {
-    // Validate both inputs
     if (!selectedClothingUrl || selectedClothingUrl.trim() === '') {
-      statusMessage.innerHTML = '<div class="error">❌ Please select a clothing item first. Open the extension on a product page and click the "Try On" button on an image.</div>';
+      statusMessage.innerHTML = '<div class="error">❌ Please select a clothing item first.</div>';
       resultSection.classList.add('show');
       return;
     }
-    
+
     if (!personPhotoFile) {
       statusMessage.innerHTML = '<div class="error">❌ Please upload your photo first.</div>';
       resultSection.classList.add('show');
@@ -56,7 +55,11 @@ document.addEventListener('DOMContentLoaded', function() {
 
     try {
       const formData = new FormData();
-      formData.append('cloth_url', selectedClothingUrl.trim());
+
+      const clothResponse = await fetch(selectedClothingUrl);
+      const blob = await clothResponse.blob();
+      const clothFile = new File([blob], 'cloth.jpg', { type: 'image/jpeg' });
+      formData.append('cloth_image', clothFile);
       formData.append('person_image', personPhotoFile);
 
       const response = await fetch('http://localhost:8000/tryon', {
@@ -88,5 +91,6 @@ document.addEventListener('DOMContentLoaded', function() {
     }
   });
 
+  setInterval(loadSelectedClothing, 1000);
   loadSelectedClothing();
 });

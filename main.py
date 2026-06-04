@@ -1,4 +1,4 @@
-from fastapi import FastAPI, File, UploadFile, Form
+from fastapi import FastAPI, File, UploadFile
 from fastapi.staticfiles import StaticFiles
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import RedirectResponse
@@ -8,7 +8,6 @@ import os
 import tempfile
 import shutil
 import uuid
-import requests
 import io
 from gradio_client import Client, handle_file
 
@@ -35,18 +34,13 @@ def root():
 @app.post("/tryon")
 async def try_on(
     person_image: UploadFile = File(...),
-    cloth_url: str = Form(default=None)
+    cloth_image: UploadFile = File(...)
 ):
     temp_dir = None
     try:
-        if not cloth_url or not cloth_url.strip():
-            return {"status": "error", "message": "cloth_url is required"}
-
-        if not person_image or person_image.size == 0:
-            return {"status": "error", "message": "person_image is required"}
-
         temp_dir = tempfile.mkdtemp()
 
+        # Save person image
         person_image_path = os.path.join(temp_dir, "person_image.jpg")
         person_content = await person_image.read()
         img = Image.open(io.BytesIO(person_content))
@@ -57,11 +51,10 @@ async def try_on(
         else:
             img.convert("RGB").save(person_image_path, "JPEG", quality=95)
 
+        # Save cloth image
         cloth_image_path = os.path.join(temp_dir, "cloth_image.jpg")
-        headers = {"User-Agent": "Mozilla/5.0"}
-        resp = requests.get(cloth_url, headers=headers, timeout=30)
-        resp.raise_for_status()
-        img = Image.open(io.BytesIO(resp.content))
+        cloth_content = await cloth_image.read()
+        img = Image.open(io.BytesIO(cloth_content))
         if img.mode in ("RGBA", "LA", "P"):
             rgb_img = Image.new("RGB", img.size, (255, 255, 255))
             rgb_img.paste(img, mask=img.split()[-1] if img.mode in ("RGBA", "LA") else None)
@@ -69,6 +62,7 @@ async def try_on(
         else:
             img.convert("RGB").save(cloth_image_path, "JPEG", quality=95)
 
+        # Call HuggingFace
         client = Client(IDM_VTON_API, token=HF_TOKEN)
         result = client.predict(
             dict={
@@ -89,10 +83,16 @@ async def try_on(
         shutil.copy(result[0], f"static/{result_filename}")
         result_image_path = f"/static/{result_filename}"
 
-        return {"status": "success", "result_image": result_image_path}
+        return {
+            "status": "success",
+            "result_image": result_image_path,
+        }
 
     except Exception as e:
-        return {"status": "error", "message": f"Failed: {str(e)}"}
+        return {
+            "status": "error",
+            "message": f"Failed: {str(e)}",
+        }
 
     finally:
         if temp_dir and os.path.exists(temp_dir):
